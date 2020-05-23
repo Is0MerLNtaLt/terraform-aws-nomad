@@ -240,8 +240,7 @@ EOF
 [Service]
 User=$nomad_user
 Group=$nomad_user
-Environment=VAULT_TOKEN="$(vault token create -policy nomad-server -period 72h -orphan -format json | jq -r '.auth.client_token')"
-ExecStart=$nomad_bin_dir/nomad agent -config $nomad_config_dir -data-dir $nomad_data_dir
+ExecStart=$nomad_bin_dir/nomad agent -config $nomad_config_dir -data-dir $nomad_data_dir --vault-token=\$(vault token create -policy nomad-server -period 72h -orphan -format json | jq -r '.auth.client_token')
 ExecReload=/bin/kill --signal HUP \$MAINPID
 KillMode=process
 Restart=on-failure
