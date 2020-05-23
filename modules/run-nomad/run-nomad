@@ -130,6 +130,7 @@ function generate_nomad_config {
   local readonly user="$5"
   local readonly client_stanza_attrs="$6"
   local readonly server_stanza_attrs="$7"
+  local readonly enable_vault_integration="$8"
   local readonly config_path="$config_dir/$NOMAD_CONFIG_FILE"
 
   local instance_id=""
@@ -165,6 +166,18 @@ EOF
 )
   fi
 
+  local vault_stanza=""
+  if [[ "$enable_vault_integration" == "true" ]]; then
+    vault_stanza=$(cat <<EOF
+vault {
+  enabled = true
+  address = "http://127.0.0.1:8200"
+  create_from_role = "nomad-cluster"
+}
+EOF
+)
+  fi
+
   log_info "Creating default Nomad config file in $config_path"
   cat > "$config_path" <<EOF
 datacenter = "$availability_zone"
@@ -181,6 +194,8 @@ advertise {
 $client_config
 
 $server_config
+
+$vault_stanza
 
 consul {
   address = "127.0.0.1:8500"
@@ -215,6 +230,8 @@ Description="HashiCorp Nomad"
 Documentation=https://www.nomadproject.io/
 Requires=network-online.target
 After=network-online.target
+After=vault.service
+Requires=vault.service
 ConditionalFileNotEmpty=$config_path
 EOF
 )
@@ -223,6 +240,7 @@ EOF
 [Service]
 User=$nomad_user
 Group=$nomad_user
+Environment=VAULT_TOKEN="$(vault token create -policy nomad-server -period 72h -orphan -format json | jq -r '.auth.client_token')"
 ExecStart=$nomad_bin_dir/nomad agent -config $nomad_config_dir -data-dir $nomad_data_dir
 ExecReload=/bin/kill --signal HUP \$MAINPID
 KillMode=process
@@ -282,6 +300,7 @@ function run {
   local environment=()
   local client_stanza_attrs=""
   local server_stanza_attrs=""
+  local enable_vault_integration="false"
   local all_args=()
 
   while [[ $# > 0 ]]; do
@@ -359,6 +378,9 @@ function run {
         server_stanza_attrs="$2"
         shift
         ;;
+      --enable-vault-integration)
+        enable_vault_integration="true"
+        ;;
       --help)
         print_usage
         exit
@@ -416,7 +438,7 @@ function run {
   if [[ "$skip_nomad_config" == "true" ]]; then
     log_info "The --skip-nomad-config flag is set, so will not generate a default Nomad config file."
   else
-    generate_nomad_config "$server" "$client" "$num_servers" "$config_dir" "$user" "$client_stanza_attrs" "$server_stanza_attrs"
+    generate_nomad_config "$server" "$client" "$num_servers" "$config_dir" "$user" "$client_stanza_attrs" "$server_stanza_attrs" "$enable_vault_integration"
   fi
 
   generate_systemd_config "$SYSTEMD_CONFIG_PATH" "$config_dir" "$data_dir" "$bin_dir" "$systemd_stdout" "$systemd_stderr" "$user" "$use_sudo" "${environment[@]}"
