@@ -241,7 +241,7 @@ EOF
 [Service]
 User=$nomad_user
 Group=$nomad_user
-ExecStart=$nomad_bin_dir/nomad agent -config $nomad_config_dir -data-dir $nomad_data_dir
+ExecStart=VAULT_TOKEN="\$(cat /opt/vault/data/vault-token)" $nomad_bin_dir/nomad agent -config $nomad_config_dir -data-dir $nomad_data_dir
 ExecReload=/bin/kill --signal HUP \$MAINPID
 KillMode=process
 Restart=on-failure
