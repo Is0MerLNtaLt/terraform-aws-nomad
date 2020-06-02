@@ -241,8 +241,8 @@ EOF
 [Service]
 User=$nomad_user
 Group=$nomad_user
-EnvironmentFile=/opt/nvc/nvt-env.txt
-ExecStartPre=/bin/bash -c 'echo VAULT_TOKEN=\$(cat /opt/nvc/nvt.txt) > /opt/nvc/nvt-env.txt'
+EnvironmentFile=/opt/nvc/nomad/nvt-env.txt
+ExecStartPre=/bin/bash -c 'echo VAULT_TOKEN=\$(cat /opt/nvc/nomad/nvt.txt) > /opt/nvc/nomad/nvt-env.txt'
 ExecStart=$nomad_bin_dir/nomad agent -config $nomad_config_dir -data-dir $nomad_data_dir
 ExecReload=/bin/kill --signal HUP \$MAINPID
 KillMode=process
