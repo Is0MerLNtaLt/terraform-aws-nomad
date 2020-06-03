@@ -131,6 +131,7 @@ function generate_nomad_config {
   local readonly client_stanza_attrs="$6"
   local readonly server_stanza_attrs="$7"
   local readonly enable_vault_integration="$8"
+  local readonly enable_tls="$9"
   local readonly config_path="$config_dir/$NOMAD_CONFIG_FILE"
 
   local instance_id=""
@@ -178,6 +179,20 @@ vault {
 EOF
 )
   fi
+  
+  local tls_stanza=""
+  if [[ "$enable_tls" == "true" ]]; then
+    tls_stanza=$(cat <<EOF
+tls {
+  http = true
+  rpc  = true
+  ca_file   = "/opt/nvc/nomad/tls/ca.pem"
+  cert_file = "/opt/nvc/nomad/tls/cert.pem"
+  key_file  = "/opt/nvc/nomad/tls/key.pem"
+}
+EOF
+)
+  fi
 
   log_info "Creating default Nomad config file in $config_path"
   cat > "$config_path" <<EOF
@@ -197,6 +212,8 @@ $client_config
 $server_config
 
 $vault_stanza
+
+$tls_stanza
 
 consul {
   address = "127.0.0.1:8500"
@@ -303,6 +320,7 @@ function run {
   local client_stanza_attrs=""
   local server_stanza_attrs=""
   local enable_vault_integration="false"
+  local enable_tls="false"
   local all_args=()
 
   while [[ $# > 0 ]]; do
@@ -383,6 +401,9 @@ function run {
       --enable-vault-integration)
         enable_vault_integration="true"
         ;;
+      --enable-tls)
+        enable_tls="true"
+        ;;
       --help)
         print_usage
         exit
@@ -440,7 +461,7 @@ function run {
   if [[ "$skip_nomad_config" == "true" ]]; then
     log_info "The --skip-nomad-config flag is set, so will not generate a default Nomad config file."
   else
-    generate_nomad_config "$server" "$client" "$num_servers" "$config_dir" "$user" "$client_stanza_attrs" "$server_stanza_attrs" "$enable_vault_integration"
+    generate_nomad_config "$server" "$client" "$num_servers" "$config_dir" "$user" "$client_stanza_attrs" "$server_stanza_attrs" "$enable_vault_integration" "$enable_tls"
   fi
 
   generate_systemd_config "$SYSTEMD_CONFIG_PATH" "$config_dir" "$data_dir" "$bin_dir" "$systemd_stdout" "$systemd_stderr" "$user" "$use_sudo" "${environment[@]}"
