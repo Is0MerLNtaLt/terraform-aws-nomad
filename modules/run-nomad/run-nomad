@@ -229,7 +229,6 @@ $acl_stanza
 
 consul {
   address = "127.0.0.1:8500"
-  token = "$(cat /opt/nvc/nomad/nct.txt)"
 }
 EOF
   chown "$user:$user" "$config_path"
