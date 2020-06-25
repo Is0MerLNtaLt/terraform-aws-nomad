@@ -186,6 +186,7 @@ EOF
     tls_stanza=$(cat <<EOF
 tls {
   rpc  = true
+  http = true
   ca_file   = "/opt/nvc/nomad/tls/ca.pem"
   cert_file = "/opt/nvc/nomad/tls/cert.pem"
   key_file  = "/opt/nvc/nomad/tls/key.pem"
